@@ -10,7 +10,7 @@
          java/ javax/ jaxp/ stax/ dom/      - residual Java-package shims (per-file removal in R4)
          data/                              - embedded resources (DotNetPlatform.LocateResource); permanent -->
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>net10.0;net472</TargetFrameworks>
     <LangVersion>11.0</LangVersion>
     <Nullable>disable</Nullable>
     <!-- Sole unsafe site: Internal/StackGuard.cs (address-of-local stack probe). -->
@@ -58,10 +58,8 @@
     <EmbeddedResource Include="data\categories.xml" LogicalName="Net.Sf.Saxon.categories.xml" />
     <EmbeddedResource Include="data\unicodeBlocks.xml" LogicalName="Net.Sf.Saxon.unicodeBlocks.xml" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- Build-time only (PrivateAssets=All): supplies the net472 reference assemblies so the build
-         does not depend on a locally installed 4.7.2 targeting pack. Nothing from it ships - the
-         produced DLL is byte-identical with and without it (verified). -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <!-- Build-time only: supplies the net472 reference assemblies when the targeting pack is absent. -->
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
   </ItemGroup>
 </Project>
