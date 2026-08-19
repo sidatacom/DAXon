@@ -10,7 +10,7 @@
          java/ javax/ jaxp/ stax/ dom/      - residual Java-package shims (per-file removal in R4)
          data/                              - embedded resources (DotNetPlatform.LocateResource); permanent -->
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net472</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net10.0;net472</TargetFrameworks>
     <LangVersion>11.0</LangVersion>
     <Nullable>disable</Nullable>
     <!-- Sole unsafe site: Internal/StackGuard.cs (address-of-local stack probe). -->
