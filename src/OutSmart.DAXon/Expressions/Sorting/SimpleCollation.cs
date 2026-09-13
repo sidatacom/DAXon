@@ -46,10 +46,9 @@ namespace OutSmart.DAXon.Expressions.Sorting
                     return (ISubstringMatcher)comparator;
                 }
 
-                // .NET simple-UCA-fallback: the comparator built by DotNetPlatform.MakeCollation (used for both
-                // lang= collations and the UCA fallback the StandardCollationURIResolver routes here) is a
-                // CompareInfo-backed comparer. Java returns a RuleBasedSubstringMatcher for a RuleBasedCollator;
-                // the .NET twin uses CompareInfo.IndexOf/IsPrefix/IsSuffix for collation-aware substring matching.
+                // The comparator built by DotNetPlatform.MakeCollation is CompareInfo-backed for supported
+                // saxon: collations. Java returns a RuleBasedSubstringMatcher for a RuleBasedCollator; the
+                // .NET twin uses CompareInfo.IndexOf/IsPrefix/IsSuffix for supported locale collations.
                 if (comparator is DotNetPlatform.CompareInfoComparer)
                 {
                     DotNetPlatform.CompareInfoComparer cic = (DotNetPlatform.CompareInfoComparer)comparator;
@@ -86,9 +85,9 @@ namespace OutSmart.DAXon.Expressions.Sorting
         }
     }
 
-    // .NET simple-UCA-fallback substring matcher. Java's SimpleCollation.getSubstringMatcher() returns a
+    // .NET locale-collation substring matcher. Java's SimpleCollation.getSubstringMatcher() returns a
     // RuleBasedSubstringMatcher (driven by a CollationElementIterator) for a RuleBasedCollator; the .NET port
-    // has no CollationElementIterator, so collation-aware substring matching is done with CompareInfo, whose
+    // has no CollationElementIterator, so supported locale-collation substring matching is done with CompareInfo, whose
     // IndexOf/IsPrefix/IsSuffix honour the same CompareOptions used for ordering. substring-before/after need
     // the matched-region length, and net472's CompareInfo.IndexOf has no matchLength overload, so it is
     // recovered by a shortest-region scan. Locale ordering is already a documented divergence from Java

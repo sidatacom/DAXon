@@ -34,9 +34,23 @@ namespace OutSmart.DAXon.Internal
         //
         // Re-calibrated against every hostile recursion shape after the foreign-exception change:
         // 64KB still allowed a real StackOverflowException on a 256KB thread, while 96KB survived.
-        // Keep the next 32KB tier as safety margin. This is a fixed abort/unwind reserve, not a
-        // percentage of the host stack; depth-proportional error paths add their own extraMargin.
-        private const ulong Margin = 128UL * 1024;
+        // Keep the next 32KB tier as safety margin on Framework. .NET 10 has separate calibrated
+        // tiers because tier-0 JIT frames are larger and DOTNET_TieredCompilation=0 changes the
+        // frame shape again; neither value is a percentage of the host stack, and depth-proportional
+        // error paths add their own extraMargin.
+        private static readonly ulong Margin = GetCalibratedMargin();
+
+        private static ulong GetCalibratedMargin()
+        {
+            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET 10", StringComparison.Ordinal))
+            {
+                return 128UL * 1024;
+            }
+
+            return string.Equals(Environment.GetEnvironmentVariable("DOTNET_TieredCompilation"), "0", StringComparison.Ordinal)
+                ? 96UL * 1024
+                : 64UL * 1024;
+        }
 
         [ThreadStatic]
         private static ulong stackLow;   // low bound of this thread's reserved stack region

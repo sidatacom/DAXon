@@ -276,10 +276,9 @@ namespace OutSmart.DAXon.Core
             return new Base64BinaryValue(Encoding.BigEndianUnicode.GetBytes(value));
         }
 
-        // UCA collator: routed through the same CompareInfo path as lang= collations. The
-        // StandardCollationURIResolver translates UCA query params (strength/numeric/caseFirst) into the
-        // Properties consumed by MakeCollation, so we let that path build it. Returning null here makes
-        // the resolver fall through to its param-translation + MakeCollation branch (the desired behaviour).
+        // No exact UCA implementation is available on this platform. The URI resolver rejects UCA
+        // requests rather than routing them through CompareInfo, whose ICU tables do not provide the
+        // required Saxon-compatible semantics for fn:starts-with and related functions.
         public virtual IStringCollator MakeUcaCollator(string uri, Configuration config) => null;
         // Always the Saxon-native regex engine (ARegularExpression). Java's "!"-flag selects java.util.regex
         // instead; that engine has no twin here, so the flag is stripped (XPath regex semantics ARE the

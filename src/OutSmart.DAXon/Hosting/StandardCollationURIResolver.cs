@@ -93,71 +93,7 @@ namespace OutSmart.DAXon.Lib
                     return uca;
                 }
 
-                // No exact UCA collator on this platform (MakeUcaCollator is a stub). `fallback=no` demands the
-                // exact UCA collation with no substitution, which we cannot guarantee — signal FOCH0002 (the
-                // spec's "collation not supported" error, which fn:compare/collation-key surface and the
-                // fallback=no tests expect). Without fallback=no we may substitute the closest CompareInfo
-                // locale/strength approximation below.
-                if (uri.Contains("fallback=no"))
-                {
-                    throw new XPathException("The UCA collation with fallback=no is not supported (no exact Unicode Collation Algorithm implementation)", "FOCH0002");
-                }
-
-                URI uuri = ParseCollationUri(uri);
-                Properties props = new Properties();
-
-                // Unlike the saxon: branch (per-value decode), the whole query is decoded up
-                // front — UCA keyword VALUES are compared against plain literals below.
-                foreach (KeyValuePair<string, string> p in QueryParams(AnyURIValue.Decode(uuri.RawQuery)))
-                {
-                    string kw = p.Key;
-                    string val = p.Value;
-                    if (kw.Equals("fallback")) // always satisfied: we provide the CompareInfo collation
-                    {
-                        continue;
-                    }
-                    // Fallback is LAX (F&O §5.3.3): an unrecognized value for a known keyword is ignored,
-                    // not an error — the strict validation in MakeCollation/CaseFirstCollator is for
-                    // saxon:-URI collations only (UCA-collation-012/017/019).
-                    switch (kw)
-                    {
-                        case "strength":
-                            switch (val)
-                            {
-                                case "1": val = "primary"; break;
-                                case "2": val = "secondary"; break;
-                                case "3": val = "tertiary"; break;
-                                case "quaternary":
-                                case "4":
-                                case "5": val = "identical"; break;
-                            }
-
-                            if (val != "primary" && val != "secondary" && val != "tertiary" && val != "identical")
-                            {
-                                continue;
-                            }
-                            break;
-                        case "caseFirst":
-                            if (val != "upper" && val != "lower")
-                            {
-                                continue;
-                            }
-                            kw = "case-order";
-                            val += "-first";
-                            break;
-                        case "numeric":
-                            if (val != "yes" && val != "no")
-                            {
-                                continue;
-                            }
-                            kw = "alphanumeric";
-                            break;
-                    }
-
-                    props.SetProperty(kw, val);
-                }
-
-                return Core.Version.platform.MakeCollation(config, props, uri);
+                throw new XPathException("The UCA collation is not supported because this platform has no exact Unicode Collation Algorithm implementation", "FOCH0002");
             }
             else
             {

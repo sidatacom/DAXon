@@ -16,10 +16,13 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Build
         run: dotnet build OutSmart.DAXon.sln -c Release
+
+      - name: Runtime tests
+        run: dotnet test tests/OutSmart.DAXon.RuntimeTests/OutSmart.DAXon.RuntimeTests.csproj -c Release --no-restore --logger "console;verbosity=minimal"
 
       - name: Smoke test
         shell: bash
@@ -29,7 +32,8 @@ jobs:
           <Project Sdk="Microsoft.NET.Sdk">
             <PropertyGroup>
               <OutputType>Exe</OutputType>
-              <TargetFramework>net472</TargetFramework>
+              <TargetFramework Condition="'$(SmokeTargetFramework)' == ''">net472</TargetFramework>
+              <TargetFramework Condition="'$(SmokeTargetFramework)' != ''">$(SmokeTargetFramework)</TargetFramework>
               <LangVersion>7.3</LangVersion>
             </PropertyGroup>
             <ItemGroup>
@@ -87,6 +91,13 @@ jobs:
           EOF
           dotnet run --project "$RUNNER_TEMP/smoke/Smoke.csproj" -c Release \
             -p:DaxonDll="$GITHUB_WORKSPACE/src/OutSmart.DAXon/bin/Release/net472/OutSmart.DAXon.dll"
+
+      - name: Smoke test net10.0
+        shell: bash
+        run: |
+          dotnet run --project "$RUNNER_TEMP/smoke/Smoke.csproj" -c Release \
+            -p:SmokeTargetFramework=net10.0 \
+            -p:DaxonDll="$GITHUB_WORKSPACE/src/OutSmart.DAXon/bin/Release/net10.0/OutSmart.DAXon.dll"
 
       - name: Upload assembly
         uses: actions/upload-artifact@v4
