@@ -1,0 +1,5 @@
+# W3C test corpora this runner is verified against. fetch-corpus downloads exactly
+# these revisions; the failure baseline in BASELINE-FAILS.txt is only meaningful for
+# them. Bump deliberately: re-run the suite and re-baseline in the same commit.
+qt3tests=201a6e466940cdfc727f4babfedcde5332b9f578
+xslt30-test=fddf1cf920087e791f13315d68dfbe874d97dc56

@@ -69,6 +69,9 @@ which the .NET `XmlReader` cannot parse. Hostile inputs cannot kill the process:
 and compile-time deadlines, input-size caps and adaptive stack guards turn deep recursion / deep
 JSON / deep regex nesting into catchable coded errors.
 
+The conformance runner lives in [`tests/QT3Test`](tests/QT3Test); it downloads the W3C
+corpora at pinned revisions, so the result above can be reproduced locally.
+
 ## How this port was produced
 
 The translation from the Saxon-HE 12.9 Java sources, and the subsequent refactoring,

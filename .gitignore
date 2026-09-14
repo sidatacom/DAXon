@@ -2,3 +2,5 @@ bin/
 obj/
 .vs/
 *.user
+tests/QT3Test/qt3tests/
+tests/QT3Test/xslt30-test/
