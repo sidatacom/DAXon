@@ -173,7 +173,18 @@ namespace OutSmart.DAXon.Expressions.Sorting
                 return source.StartsWith(target, StringComparison.Ordinal);
             }
 
-            return compareInfo.IsPrefix(source, target, options);
+            if (compareInfo.IsPrefix(source, target, options))
+            {
+                return true;
+            }
+
+            // ICU reports the SHORTEST matching region, so a match separated from position 0 by
+            // ignorable characters only (UCA alternate=blanked drops punctuation at primary
+            // strength) is not a prefix to it, while NLS calls it one. Those characters contribute
+            // nothing: skip them and ask again. A source opening with a significant character
+            // stops here after one comparison, whatever its length.
+            int head = LeadingIgnorables(source);
+            return head > 0 && compareInfo.IsPrefix(source.Substring(head), target, options);
         }
 
         private bool IsSuffix(string source, string target)
@@ -188,7 +199,14 @@ namespace OutSmart.DAXon.Expressions.Sorting
                 return source.EndsWith(target, StringComparison.Ordinal);
             }
 
-            return compareInfo.IsSuffix(source, target, options);
+            if (compareInfo.IsSuffix(source, target, options))
+            {
+                return true;
+            }
+
+            // Mirror of IsPrefix: a trailing run of ignorable characters must not hide the match.
+            int tail = TrailingIgnorables(source);
+            return tail > 0 && compareInfo.IsSuffix(source.Substring(0, source.Length - tail), target, options);
         }
 
         // True when the pattern collation-equals the empty string — all its collation elements are
@@ -200,6 +218,43 @@ namespace OutSmart.DAXon.Expressions.Sorting
         private bool CollatesEmpty(string target)
         {
             return !ordinal && target.Length != 0 && compareInfo.Compare(target, string.Empty, options) == 0;
+        }
+
+        // Length of the leading run of code points that collation-equal the empty string. Whole
+        // code points only: half a surrogate pair would be judged as garbage, not as ignorable.
+        private int LeadingIgnorables(string s)
+        {
+            int pos = 0;
+            while (pos < s.Length)
+            {
+                int width = char.IsHighSurrogate(s[pos]) && pos + 1 < s.Length && char.IsLowSurrogate(s[pos + 1]) ? 2 : 1;
+                if (compareInfo.Compare(s, pos, width, string.Empty, 0, 0, options) != 0)
+                {
+                    break;
+                }
+
+                pos += width;
+            }
+
+            return pos;
+        }
+
+        // Mirror of LeadingIgnorables, walking back from the end.
+        private int TrailingIgnorables(string s)
+        {
+            int pos = s.Length;
+            while (pos > 0)
+            {
+                int width = char.IsLowSurrogate(s[pos - 1]) && pos >= 2 && char.IsHighSurrogate(s[pos - 2]) ? 2 : 1;
+                if (compareInfo.Compare(s, pos - width, width, string.Empty, 0, 0, options) != 0)
+                {
+                    break;
+                }
+
+                pos -= width;
+            }
+
+            return s.Length - pos;
         }
 
         // A collation-aware match can span a region whose code-unit length differs from the pattern's (e.g.

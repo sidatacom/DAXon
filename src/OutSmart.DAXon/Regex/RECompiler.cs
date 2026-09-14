@@ -31,6 +31,7 @@ using OutSmart.DAXon.Values;
 using OutSmart.DAXon.Core;
 using OutSmart.DAXon.Internal.Collections;
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -493,6 +494,12 @@ namespace OutSmart.DAXon.Regex
             return null;
         }
 
+#if NET
+        // .NET 10 tier-0 frames are ~2.25x the optimised size and this method sits in a
+        // per-level recursion cycle, where that costs depth. Measured per site: the attribute
+        // is not a blanket win, so it is applied only where it pays.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         protected virtual ICharacterClass ParseCharacterClass()
         {
 

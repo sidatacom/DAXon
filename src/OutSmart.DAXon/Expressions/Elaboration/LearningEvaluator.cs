@@ -35,6 +35,12 @@ namespace OutSmart.DAXon.Expressions.Elaboration
             this.count = 0;
         }
 
+#if NET
+        // .NET 10 tier-0 frames are ~2.25x the optimised size and this method sits in a
+        // per-level recursion cycle, where that costs depth. Measured per site: the attribute
+        // is not a blanket win, so it is applied only where it pays.
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)]
+#endif
         public virtual ISequence Evaluate(IXPathContext context)
         {
             // Counter updates are deliberately race-tolerant (as in Java): a stale value only

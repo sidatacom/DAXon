@@ -379,38 +379,75 @@ namespace OutSmart.DAXon.Expressions
             }
         }
 
+        // Explicit worklist, not recursion: this runs once per tree level on the compile path,
+        // after the parser's own guarded descent, and a deeply nested expression used to take the
+        // process down with a real StackOverflowException (visible first on .NET 10, whose tier-0
+        // frames are ~2x Framework's). Per-node behaviour is unchanged, including the deliberate
+        // carry-over of a child's local context to its later siblings.
         public virtual void SetRetainedStaticContextThoroughly(RetainedStaticContext rsc)
         {
-            if (rsc != null)
+            if (rsc == null)
             {
-                retainedStaticContext = rsc;
-                foreach (Operand o in Operands())
+                return;
+            }
+
+            var work = new Stack<PendingRsc>();
+            work.Push(new PendingRsc(this, rsc));
+            while (work.Count > 0)
+            {
+                PendingRsc item = work.Pop();
+                Expression node = item.Node;
+                RetainedStaticContext ctx = item.Context;
+                if (ctx == null)
                 {
-                    if (o != null)
+                    continue;
+                }
+
+                node.retainedStaticContext = ctx;
+                foreach (Operand o in node.Operands())
+                {
+                    if (o == null)
                     {
-                        Expression child = o.GetChildExpression();
-                        if (child != null)
+                        continue;
+                    }
+
+                    Expression child = o.GetChildExpression();
+                    if (child == null)
+                    {
+                        continue;
+                    }
+
+                    if (child.LocalRetainedStaticContext == null)
+                    {
+                        work.Push(new PendingRsc(child, ctx));
+                    }
+                    else
+                    {
+                        ctx = child.LocalRetainedStaticContext;
+                        foreach (Operand p in child.Operands())
                         {
-                            if (child.LocalRetainedStaticContext == null)
+                            Expression grandchild = p.GetChildExpression();
+                            if (grandchild != null)
                             {
-                                child.SetRetainedStaticContextThoroughly(rsc);
-                            }
-                            else
-                            {
-                                rsc = child.LocalRetainedStaticContext;
-                                foreach (Operand p in child.Operands())
-                                {
-                                    Expression grandchild = p.GetChildExpression();
-                                    if (grandchild != null)
-                                    {
-                                        grandchild.SetRetainedStaticContextThoroughly(rsc);
-                                    }
-                                }
+                                work.Push(new PendingRsc(grandchild, ctx));
                             }
                         }
                     }
                 }
             }
+        }
+
+        private readonly struct PendingRsc
+        {
+            public PendingRsc(Expression node, RetainedStaticContext context)
+            {
+                Node = node;
+                Context = context;
+            }
+
+            public Expression Node { get; }
+
+            public RetainedStaticContext Context { get; }
         }
 
         public virtual void SetRetainedStaticContextLocally(RetainedStaticContext rsc)

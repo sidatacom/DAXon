@@ -56,6 +56,12 @@ namespace OutSmart.DAXon.Values
             }
         }
 
+#if NET
+        // .NET 10 tier-0 frames are ~2.25x the optimised size and this method sits in a
+        // per-level recursion cycle, where that costs depth. Measured per site: the attribute
+        // is not a blanket win, so it is applied only where it pays.
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)]
+#endif
         public override IItem Head()
         {
             try
@@ -68,6 +74,12 @@ namespace OutSmart.DAXon.Values
             }
         }
 
+#if NET
+        // .NET 10 tier-0 frames are ~2.25x the optimised size and this method sits in a
+        // per-level recursion cycle, where that costs depth. Measured per site: the attribute
+        // is not a blanket win, so it is applied only where it pays.
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)]
+#endif
         public virtual IItem AsItem()
         {
             lock (this)

@@ -28,9 +28,9 @@
   <PropertyGroup>
     <!-- Assembly identity. AssemblyVersion is the binding identity: bump only on a breaking
          change, so consumers are not forced to re-bind on every patch. -->
-    <Version>1.3.2</Version>
+    <Version>1.3.3</Version>
     <AssemblyVersion>1.3.0.0</AssemblyVersion>
-    <FileVersion>1.3.2.0</FileVersion>
+    <FileVersion>1.3.3.0</FileVersion>
     <!-- Derived from Version, not spelled out: a literal here silently went stale in 1.3.0. -->
     <InformationalVersion>$(Version) (port of Saxon-HE 12.9)</InformationalVersion>
     <!-- Off: the SDK would otherwise append the building repository's commit SHA to

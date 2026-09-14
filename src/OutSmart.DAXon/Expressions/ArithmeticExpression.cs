@@ -12,6 +12,7 @@ using OutSmart.DAXon.Model;
 using OutSmart.DAXon.Tracing;
 using OutSmart.DAXon.Transformation;
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -491,19 +492,43 @@ namespace OutSmart.DAXon.Expressions
                 }
                 else
                 {
-                    return (context) =>
+                    return new TotalArith(arg0Eval, arg1Eval, calc, exp).Eval;
+                }
+            }
+
+            // Named rather than a lambda so the attribute below can be attached: this frame sits
+            // in the per-level cycle of user-function recursion, where a tier-0 frame costs
+            // recursion depth on .NET 10. The class itself is frame-neutral; the attribute is not.
+            private sealed class TotalArith
+            {
+                private readonly IItemEvaluator arg0Eval;
+                private readonly IItemEvaluator arg1Eval;
+                private readonly Calculator calc;
+                private readonly ArithmeticExpression exp;
+
+                public TotalArith(IItemEvaluator arg0Eval, IItemEvaluator arg1Eval, Calculator calc, ArithmeticExpression exp)
+                {
+                    this.arg0Eval = arg0Eval;
+                    this.arg1Eval = arg1Eval;
+                    this.calc = calc;
+                    this.exp = exp;
+                }
+
+#if NET
+                [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
+                public IItem Eval(IXPathContext context)
+                {
+                    AtomicValue v0 = (AtomicValue)arg0Eval.Eval(context);
+                    AtomicValue v1 = (AtomicValue)arg1Eval.Eval(context);
+                    try
                     {
-                        AtomicValue v0 = (AtomicValue)arg0Eval.Eval(context);
-                        AtomicValue v1 = (AtomicValue)arg1Eval.Eval(context);
-                        try
-                        {
-                            return calc.Compute(v0, v1, context);
-                        }
-                        catch (XPathException e)
-                        {
-                            throw e.MaybeWithLocation(exp.GetLocation()).MaybeWithContext(context);
-                        }
-                    };
+                        return calc.Compute(v0, v1, context);
+                    }
+                    catch (XPathException e)
+                    {
+                        throw e.MaybeWithLocation(exp.GetLocation()).MaybeWithContext(context);
+                    }
                 }
             }
         }

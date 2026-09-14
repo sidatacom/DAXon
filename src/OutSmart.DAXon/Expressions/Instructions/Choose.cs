@@ -13,6 +13,7 @@ using OutSmart.DAXon.Trees.Iterators;
 using OutSmart.DAXon.Values;
 using OutSmart.DAXon.Internal.Collections;
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -915,61 +916,98 @@ namespace OutSmart.DAXon.Expressions.Instructions
                     actions[i] = expr.GetAction(i).MakeElaborator().ElaborateForPull();
                 }
 
+                ChoosePull pull = new ChoosePull(conditions, actions);
                 switch (count)
                 {
-                    case 1:
-                        return (context) =>
-                        {
-                            if (conditions[0].Eval(context))
-                                return actions[0].Iterate(context);
-                            return EmptyIterator.GetInstance();
-                        };
-                    case 2:
-                        return (context) =>
-                        {
-                            if (conditions[0].Eval(context))
-                                return actions[0].Iterate(context);
-                            if (conditions[1].Eval(context))
-                                return actions[1].Iterate(context);
-                            return EmptyIterator.GetInstance();
-                        };
-                    case 3:
-                        return (context) =>
-                        {
-                            if (conditions[0].Eval(context))
-                                return actions[0].Iterate(context);
-                            if (conditions[1].Eval(context))
-                                return actions[1].Iterate(context);
-                            if (conditions[2].Eval(context))
-                                return actions[2].Iterate(context);
-                            return EmptyIterator.GetInstance();
-                        };
-                    case 4:
-                        return (context) =>
-                        {
-                            if (conditions[0].Eval(context))
-                                return actions[0].Iterate(context);
-                            if (conditions[1].Eval(context))
-                                return actions[1].Iterate(context);
-                            if (conditions[2].Eval(context))
-                                return actions[2].Iterate(context);
-                            if (conditions[3].Eval(context))
-                                return actions[3].Iterate(context);
-                            return EmptyIterator.GetInstance();
-                        };
-                    default:
-                        return (context) =>
-                        {
-                            for (int i = 0; i < count; i++)
-                            {
-                                if (conditions[i].Eval(context))
-                                {
-                                    return actions[i].Iterate(context);
-                                }
-                            }
+                    case 1: return pull.Eval1;
+                    case 2: return pull.Eval2;
+                    case 3: return pull.Eval3;
+                    case 4: return pull.Eval4;
+                    default: return pull.EvalN;
+                }
+            }
 
-                            return EmptyIterator.GetInstance();
-                        };
+            // Named rather than lambdas so AggressiveOptimization can be attached: an if/then/else
+            // is a Choose, so this frame sits in the per-level cycle of user-function recursion,
+            // where a tier-0 frame costs recursion depth on .NET 10. The unrolled arities are kept
+            // exactly as they were - the class is frame-neutral on its own, the attribute is not.
+            private sealed class ChoosePull
+            {
+                private readonly IBooleanEvaluator[] conditions;
+                private readonly IPullEvaluator[] actions;
+
+                public ChoosePull(IBooleanEvaluator[] conditions, IPullEvaluator[] actions)
+                {
+                    this.conditions = conditions;
+                    this.actions = actions;
+                }
+
+#if NET
+                [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
+                public ISequenceIterator Eval1(IXPathContext context)
+                {
+                    if (conditions[0].Eval(context))
+                        return actions[0].Iterate(context);
+                    return EmptyIterator.GetInstance();
+                }
+
+#if NET
+                [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
+                public ISequenceIterator Eval2(IXPathContext context)
+                {
+                    if (conditions[0].Eval(context))
+                        return actions[0].Iterate(context);
+                    if (conditions[1].Eval(context))
+                        return actions[1].Iterate(context);
+                    return EmptyIterator.GetInstance();
+                }
+
+#if NET
+                [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
+                public ISequenceIterator Eval3(IXPathContext context)
+                {
+                    if (conditions[0].Eval(context))
+                        return actions[0].Iterate(context);
+                    if (conditions[1].Eval(context))
+                        return actions[1].Iterate(context);
+                    if (conditions[2].Eval(context))
+                        return actions[2].Iterate(context);
+                    return EmptyIterator.GetInstance();
+                }
+
+#if NET
+                [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
+                public ISequenceIterator Eval4(IXPathContext context)
+                {
+                    if (conditions[0].Eval(context))
+                        return actions[0].Iterate(context);
+                    if (conditions[1].Eval(context))
+                        return actions[1].Iterate(context);
+                    if (conditions[2].Eval(context))
+                        return actions[2].Iterate(context);
+                    if (conditions[3].Eval(context))
+                        return actions[3].Iterate(context);
+                    return EmptyIterator.GetInstance();
+                }
+
+#if NET
+                [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
+                public ISequenceIterator EvalN(IXPathContext context)
+                {
+                    for (int i = 0; i < conditions.Length; i++)
+                    {
+                        if (conditions[i].Eval(context))
+                        {
+                            return actions[i].Iterate(context);
+                        }
+                    }
+
+                    return EmptyIterator.GetInstance();
                 }
             }
 
@@ -1148,6 +1186,12 @@ namespace OutSmart.DAXon.Expressions.Instructions
                 this.count = conditions.Length;
             }
 
+#if NET
+            // .NET 10 tier-0 frames are ~2.25x the optimised size and this method sits in a
+            // per-level recursion cycle, where that costs depth. Measured per site: the attribute
+            // is not a blanket win, so it is applied only where it pays.
+            [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
             public virtual ISequence Evaluate(IXPathContext context)
             {
                 for (int i = 0; i < count; i++)

@@ -19,6 +19,7 @@ using OutSmart.DAXon.Tracing;
 using OutSmart.DAXon.Values;
 using OutSmart.DAXon.Internal.Collections;
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -552,6 +553,11 @@ namespace OutSmart.DAXon.Expressions.Instructions
         // Deliberately mirrors Call's frame shape: recursion descends through here, and the
         // per-level stack cost must not exceed the classic path's (probe contract: depth-2000
         // user-function recursion, including on a 1MB thread).
+#if NET
+        // .NET 10 tier-0 frames are ~2.25x the optimised size; this method sits in the
+        // per-level cycle of user-function recursion, so quick JIT here costs recursion depth.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         internal ISequence CallRightSized(XPathContextMajor c2, ISequence[] vars)
         {
             c2.SetStackFrame(GetStackFrameMap(), vars);
@@ -562,6 +568,11 @@ namespace OutSmart.DAXon.Expressions.Instructions
         /// The body-evaluation half of Call: assumes the caller has already installed the stack
         /// frame. FusedArity(1|2)Caller installs one reused frame and comes here directly.
         /// </summary>
+#if NET
+        // .NET 10 tier-0 frames are ~2.25x the optimised size; this method sits in the
+        // per-level cycle of user-function recursion, so quick JIT here costs recursion depth.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         internal ISequence EvaluateBodyDirect(XPathContextMajor c2)
         {
             // Every pull/item function invocation (classic and fused) enters here, so this one
