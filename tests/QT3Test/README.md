@@ -79,7 +79,7 @@ alternate weighting need full ICU), remote HTTP resources, and similar.
 
 ## Notes
 
-- The runner targets `net472`, like the engine.
+- The runner targets `net472`; the engine ships `net472` and `net10.0` builds, and the runner uses the former.
 - Set `QTDBG=1` to see the engine's per-case warnings; they are silenced by default because they
   dominate the log and slow the sweep down.
 - Updating a corpus is a deliberate change: bump the revision in `corpus.pin`, re-run the sweep, and

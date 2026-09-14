@@ -41,7 +41,7 @@ namespace OutSmart.DAXon.Internal
         [ThreadStatic]
         private static ulong stackLow;   // low bound of this thread's reserved stack region
 
-        private static volatile bool noApi;   // GetCurrentThreadStackLimits needs Win8/Server2012+
+        private static volatile bool noApi;   // GetCurrentThreadStackLimits needs Windows 8/Server 2012+; absent off Windows
 
         // QTDBG_SG=1 traces remaining-stack headroom to stderr (cached: an env lookup per probe
         // would allocate on the hot path).
@@ -119,6 +119,10 @@ namespace OutSmart.DAXon.Internal
                 {
                     noApi = true;
                 }
+                catch (DllNotFoundException)
+                {
+                    noApi = true;   // no kernel32 at all: the net10.0 build also runs on Linux and macOS
+                }
             }
 
             if (noApi)
@@ -130,7 +134,7 @@ namespace OutSmart.DAXon.Internal
             Probe(extraMargin);
         }
 
-        // Pre-Windows-8 fallback: the BCL probe (conservative — 512 KB on 64-bit Framework).
+        // Pre-Windows-8 and non-Windows fallback: the BCL probe (conservative — 512 KB on 64-bit Framework, 128 KB on .NET).
         private static void FallbackProbe()
         {
             try
